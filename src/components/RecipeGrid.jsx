@@ -10,4 +10,11 @@ export default function RecipeGrid({meals}) {
             </div>
         )
     }
+    return(
+        <div className="">
+      {meals.map(meal => (
+        <RecipeCard key={meal.idMeal} meal={meal} />
+      ))}
+    </div>
+    )
 }
