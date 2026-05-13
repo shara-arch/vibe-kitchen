@@ -7,20 +7,22 @@ const MOODS = [
 ]
 export default function MoodSelector({ selectedMood, onMoodSelect }) {
   return (
-    <section className="">
+    <section className="mb-8">
       <h2 className="">How are you feeling?</h2>
-      <p className="">Pick a mood and we'll suggest the perfect recipes</p>
-      <div className="">
+      <p className="text-stone-500 mb-5 text-sm">Pick a mood and we'll suggest the perfect recipes</p>
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {MOODS.map(mood => (
           <button
             key={mood.name}
             data-active={selectedMood === mood.name}
             onClick={() => onMoodSelect(mood.name)}
-            className={}
+            className={`flex flex-col items-center gap-1.5 py-4 px-2 rounded-xl border-2 border-stone-200 bg-white transition-all duration-200 cursor-pointer ${mood.color} ${
+              selectedMood === mood.name ? 'shadow-md scale-105' : 'hover:scale-105 hover:shadow-sm'
+            }`}
           >
-            <span className="">{mood.icon}</span>
-            <span className="">{mood.name}</span>
-            <span className="">{mood.desc}</span>
+            <span className="text-2xl">{mood.icon}</span>
+            <span className="text-xs font-semibold text-stone-700">{mood.name}</span>
+            <span className="text-[10px] text-stone-400 text-center leading-tight">{mood.desc}</span>
           </button>
         ))}
       </div>
