@@ -7,7 +7,8 @@ import { UtensilsCrossed, Compass, BookOpen } from 'lucide-react';
 export default function Navbar(){
     return(
         <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-stone-200 shadow-sm">
-            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">            
+            <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">           
             <div className="bg-amber-500 text-white p-2 rounded-xl group-hover:bg-amber-600 transition-colors">
             {/* Logo Section */}
 
@@ -16,6 +17,7 @@ export default function Navbar(){
             <div>
             <h1 className="text-xl font-bold text-stone-800 leading-tight">Vibe Kitchen</h1>
             <p className="text-xs text-stone-500 leading-tight">Cook based on your mood.</p>
+            </div>
             </div>
             <nav className="flex items-center gap-2">
                 {/* Navigates to the homepage */}

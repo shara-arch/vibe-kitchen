@@ -8,7 +8,7 @@ const MOODS = [
 export default function MoodSelector({ selectedMood, onMoodSelect }) {
   return (
     <section className="mb-8">
-      <h2 className="">How are you feeling?</h2>
+      <h2 className="text-2xl font-bold text-stone-800 mb-1">How are you feeling?</h2>
       <p className="text-stone-500 mb-5 text-sm">Pick a mood and we'll suggest the perfect recipes</p>
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
         {MOODS.map(mood => (
