@@ -18,20 +18,24 @@ export default function DiscoverPage() {
       )
     : meals;
   return(
-    <main>
+    <main className='max-w-6xl mx-auto px-4 py-8'>
         <About />
         <MoodSelector selectedMood={selectedMood} onMoodSelect={setSelectedMood}/>
         <SearchBar value={searchQuery} onChange={setSearchQuery}/>
-        <div>
+        <div className='flex items-center justify-between mb-4'>
             {filteredMeals.length > 0 && (
-                <p className="">
-                    Showing <span className="">{filteredMeals.length}</span> recipes
-                    {selectedMood && <span> for <span className="">{selectedMood}</span></span>}
+                <p className="text-sm text-stone-500">
+                    Showing <span className="font-semibold text-stone-700">{filteredMeals.length}</span> recipes
+                    {selectedMood && <span> for <span className="font-semibold text-amber-600">{selectedMood}</span></span>}
                 </p>
             )}
-            <button className=""> <SlidersHorizontal size={15}/> Filters
+            <button className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                 showFilters || activeFilters.length > 0
+                ? 'bg-amber-500 border-amber-500 text-white'
+                : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600'
+                }`}> <SlidersHorizontal size={15}/> Filters
             {activeFilters.length > 0 && (
-            <span className="">{activeFilters.length}</span>
+            <span className="bg-white/30 text-white text-xs rounded-full px-1.5">{activeFilters.length}</span>
           )}
           </button>
         </div>
