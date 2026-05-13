@@ -14,6 +14,11 @@ export default function SearchBar({value, onChange}) {
             <input ref={inputRef} type="text" placeholder="Search for recipes... (e.g. chicken, pasta, salad)"
             value={value}
             onChange={e => onChange(e.target.value)} className="" />
+            {value &&(
+                <button onClick={handleClear} className="">
+                    <X size={16}/>
+                </button>
+            )}
         </div>
     )
 }
