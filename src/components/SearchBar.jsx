@@ -8,4 +8,12 @@ export default function SearchBar({value, onChange}) {
         onChange("");
         inputRef.current?.focus();
     }
+    return(
+        <div className="">
+            <Search size={18}/>
+            <input ref={inputRef} type="text" placeholder="Search for recipes... (e.g. chicken, pasta, salad)"
+            value={value}
+            onChange={e => onChange(e.target.value)} className="" />
+        </div>
+    )
 }
