@@ -20,6 +20,24 @@ export default function FilterPanel({activeFilters, onFilterChange}){
                     </span>
                     )}
             </div>
+            <div>
+                 {Object.entries(FILTER_OPTIONS).map(([group, options]) => (
+                    <div key={group}>
+                        <p className="">{group}</p>
+                        <div className="">
+                        {options.map(opt => (
+                            <button
+                            key={opt}
+                            onClick={() => toggleFilter(opt)}
+                            className={}
+                            >
+                            {opt}
+                            </button>
+                        ))}
+                        </div>
+                    </div>
+                    ))}
+            </div>
         </div>
     )
 }
