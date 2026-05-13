@@ -37,7 +37,7 @@ export default function DiscoverPage() {
                     {selectedMood && <span> for <span className="font-semibold text-amber-600">{selectedMood}</span></span>}
                 </p>
             )}
-            <button className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+            <button onClick={() => setShowFilters(!showFilters)} className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                  showFilters || activeFilters.length > 0
                 ? 'bg-amber-500 border-amber-500 text-white'
                 : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600'
