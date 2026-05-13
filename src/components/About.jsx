@@ -1,7 +1,7 @@
 import React from "react";
 export default function About() {
     return(
-        <section className="max-w-4xl mx-auto px-6 py-12 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg shadow-sm mb-6">
+        <section className="max-w-4xl mx-auto px-4 py-12 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg shadow-sm mb-6">
             <div className="text-left">
             <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto">
                 Welcome to Vibe Kitchen: Cook Based on Your Mood 😉 <br></br>

@@ -8,6 +8,7 @@ export default function RecipeCard({meal}) {
         <div className="group bg-white rounded-2xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer">
             <div className='relative overflow-hidden aspect-[4/3]'>
                 <img src={meal.strMealThumb} alt={meal.MealName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            </div>
                 <div className="p-4">
                     <h3 className='font-semibold text-stone-800 text-sm leading-snug mb-2 line-clamp-2 group-hover:text-amber-600 transition-colors'>
                         {meal.MealName}</h3>
@@ -29,7 +30,7 @@ export default function RecipeCard({meal}) {
                         <span className='flex items-center gap-1'><Users size={11}/>4 Servings</span>
                     </div>
                 </div>
-            </div>
         </div>
+        
     )
 }
