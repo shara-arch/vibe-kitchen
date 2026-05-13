@@ -6,6 +6,8 @@ import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    {/* add BrowserRouter to main.jsx for navigation support */}
+    {/* Integrates the history API wrapper to allow for declarative routing across the component tree. */}
     <BrowserRouter>
     <App />
     </BrowserRouter>
