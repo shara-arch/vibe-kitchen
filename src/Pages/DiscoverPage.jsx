@@ -11,6 +11,14 @@ export default function DiscoverPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
+  const [meals, setMeals] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/meals')
+      .then(res => res.json())
+      .then(data => setMeals(data))
+      .catch(err => console.error('Error fetching meals:', err));
+  }, []);
   const filteredMeals = activeFilters.length
     ? meals.filter(m =>
         // Determines whether the specified callback function returns true for any element of an array.
@@ -42,7 +50,7 @@ export default function DiscoverPage() {
         {showFilters && (
         <FilterPanel activeFilters={activeFilters} onFilterChange={setActiveFilters} />
       )}
-      <RecipeGrid meal={filteredMeals} />
+      <RecipeGrid meals={filteredMeals} />
     </main>
   )
 }

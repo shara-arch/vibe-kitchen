@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
-import Navbar from './components/Navbar.jsx';
-import DiscoverPage from './pages/DiscoverPage.jsx';
+import Navbar from './components/NavBar.jsx';
+import DiscoverPage from './Pages/DiscoverPage.jsx';
 
 export default function App(){
     return (

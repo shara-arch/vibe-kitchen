@@ -1,0 +1,26 @@
+
+{
+  "meals": [
+    {
+      "idMeal": "1",
+      "MealName": "Spaghetti Carbonara",
+      "MealCategory": "Italian",
+      "mealOrigin": "Italy",
+      "strMealThumb": "https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg"
+    },
+    {
+      "idMeal": "2",
+      "MealName": "Chicken Curry",
+      "MealCategory": "Indian",
+      "mealOrigin": "India",
+      "strMealThumb": "https://www.themealdb.com/images/media/meals/sxwquu1511793428.jpg"
+    },
+    {
+      "idMeal": "3",
+      "MealName": "Beef Tacos",
+      "MealCategory": "Mexican",
+      "mealOrigin": "Mexico",
+      "strMealThumb": "https://www.themealdb.com/images/media/meals/ypxvwv1505333929.jpg"
+    }
+  ]
+}
