@@ -10,4 +10,16 @@ export default function FilterPanel({activeFilters, onFilterChange}){
             prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev,filter]
         );
     }
+    return(
+        <div>
+            <div>
+                <SlidersHorizontal size={16}/><h3>Filter Options</h3>
+                 {activeFilters.length > 0 && (
+                    <span className=""  onClick={() => onFilterChange([])}>
+                        Clear all ({activeFilters.length})
+                    </span>
+                    )}
+            </div>
+        </div>
+    )
 }
