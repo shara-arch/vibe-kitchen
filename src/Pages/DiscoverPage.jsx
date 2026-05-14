@@ -20,7 +20,6 @@ export default function DiscoverPage() {
         const categories = ['Chicken', 'Seafood', 'Vegetarian', 'Beef', 'Pasta']
 
         //fetch meal list for each category
-        //Promise.all() lets you run multiple async requests at the same time instead of one after another
         const results = await Promise.all(
           categories.map(cat => 
             fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
@@ -29,9 +28,10 @@ export default function DiscoverPage() {
         )
         console.log("Results: ", results)
 
-        //Grab 5 meals per category and flatten(removes 1 level of nesting from an array) to 1 array
-        const mealIds = results.map(r => r.meals.slice(0, 4)).flat()
+        //Grab 10 meals per category and flatten(removes 1 level of nesting from an array) to 1 array
+        const mealIds = results.map(r => r.meals.slice(0, 10)).flat()
         console.log("Meal Ids: ",mealIds)
+        console.log("Meal categories: ", mealIds.strCategory)
 
         //fetch full details of each meal
         const detailed = await Promise.all(
@@ -52,7 +52,43 @@ export default function DiscoverPage() {
     }
     fetchMeals()
   }, []);
-   
+
+  //mood selection filter
+  async function handleMoodSelected(moodName, moodCategories ){
+    setSelectedMood(moodName);
+    setLoading(true);
+
+    try{
+      const results = await Promise.all(
+          moodCategories.map(cat => 
+            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
+              .then(res => res.json())
+          )
+        )
+
+        const mealIds = results
+        .filter(r => r.meals !== null) //filters out any categories that return no meals
+        .map(r => r.meals.slice(0, 10)).flat()
+
+        //fetch full details of each meal
+        const detailed = await Promise.all(
+          mealIds.map(meal => 
+            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
+              .then(res => res.json()) //the response for each meal comes in array format
+              .then(d => d.meals?.[0] ?? null) //makes sure to display the first and only index in each response meal array
+          )
+        )
+
+        setMeals(detailed.filter(meal => meal !== null)) //only set meals that have details, filters out any null values that may occur if a meal lookup fails
+      
+      }catch(err){
+        console.error("Error message: ",err)
+      } finally{
+        setLoading(false)
+      }
+    
+
+  }
 
   const filteredMeals = activeFilters.length
     ? meals.filter(m =>
@@ -66,7 +102,7 @@ export default function DiscoverPage() {
   return(
     <main className='max-w-6xl mx-auto px-4 py-8'>
         <About />
-        <MoodSelector selectedMood={selectedMood} onMoodSelect={setSelectedMood}/>
+        <MoodSelector selectedMood={selectedMood} onMoodSelect={handleMoodSelected} />
         <SearchBar value={searchQuery} onChange={setSearchQuery}/>
         <div className='flex items-center justify-between mb-4'>
             {filteredMeals.length > 0 && (
