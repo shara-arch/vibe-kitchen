@@ -11,7 +11,7 @@ export default function RecipeCard({meal}) {
             </div>
                 <div className="p-4">
                     <h3 className='font-semibold text-stone-800 text-sm leading-snug mb-2 line-clamp-2 group-hover:text-amber-600 transition-colors'>
-                        {meal.MealName}</h3>
+                        {meal.strMeal}</h3>
                     <div className='flex flex-wrap gap-1.5 mb-3'>
                         {/* Displays the category of meals ie beef, vegeterian, vegan */}
                         {/* NOTE:Card Render may not occur due to variable mismatch */}

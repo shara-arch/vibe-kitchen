@@ -2,6 +2,8 @@ import { ChefHat } from "lucide-react";
 import RecipeCard from './RecipeCard.jsx';
 
 export default function RecipeGrid({meals}) {
+
+    
     if(!meals.length){
         return(
             <div className="">
