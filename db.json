@@ -1,26 +1,6 @@
 
 {
   "meals": [
-    {
-      "idMeal": "1",
-      "MealName": "Spaghetti Carbonara",
-      "MealCategory": "Pasta",
-      "mealOrigin": "Italian",
-      "strMealThumb": "https://www.themealdb.com/images/media/meals/llcbn01574260722.jpg"
-    },
-    {
-      "idMeal": "2",
-      "MealName": "Chicken Curry",
-      "MealCategory": "Chicken",
-      "mealOrigin": "Indian",
-      "strMealThumb": "https://spicecravings.com/wp-content/uploads/2025/07/Coconut-Curry-Chicken-New-Featured.jpg"
-    },
-    {
-      "idMeal": "3",
-      "MealName": "Beef Tacos",
-      "MealCategory": "Beef",
-      "mealOrigin": "Mexican",
-      "strMealThumb": "https://www.themealdb.com/images/media/meals/ypxvwv1505333929.jpg"
-    }
+    
   ]
 }

@@ -12,19 +12,57 @@ export default function DiscoverPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
   const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState (true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/meals')
-      .then(res => res.json())
-      .then(data => setMeals(data))
-      .catch(err => console.error('Error fetching meals:', err));
+    async function fetchMeals(){
+      try{
+        const categories = ['Chicken', 'Seafood', 'Vegetarian', 'Beef', 'Pasta']
+
+        //fetch meal list for each category
+        //Promise.all() lets you run multiple async requests at the same time instead of one after another
+        const results = await Promise.all(
+          categories.map(cat => 
+            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
+              .then(res => res.json())
+          )
+        )
+        console.log("Results: ", results)
+
+        //Grab 5 meals per category and flatten(removes 1 level of nesting from an array) to 1 array
+        const mealIds = results.map(r => r.meals.slice(0, 4)).flat()
+        console.log("Meal Ids: ",mealIds)
+
+        //fetch full details of each meal
+        const detailed = await Promise.all(
+          mealIds.map(meal => 
+            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
+              .then(res => res.json()) //the response for each meal comes in array format
+              .then(d => d.meals?.[0] ?? null) //makes sure to display the first and only index in each response meal array
+          )
+        )
+        console.log("Detailed result: ", detailed)
+
+        setMeals(detailed)
+      }catch(err){
+        console.error("Error message: ",err)
+      } finally{
+        setLoading(false)
+      }
+    }
+    fetchMeals()
   }, []);
+   
+
   const filteredMeals = activeFilters.length
     ? meals.filter(m =>
         // Determines whether the specified callback function returns true for any element of an array.
         activeFilters.some(f => m.MealCategory?.toLowerCase().includes(f.toLowerCase()))
       )
     : meals;
+
+
+
   return(
     <main className='max-w-6xl mx-auto px-4 py-8'>
         <About />
@@ -50,7 +88,10 @@ export default function DiscoverPage() {
         {showFilters && (
         <FilterPanel activeFilters={activeFilters} onFilterChange={setActiveFilters} />
       )}
-      <RecipeGrid meals={filteredMeals} />
+      { loading ? <p>Loading meals...</p> 
+      : <RecipeGrid meals={filteredMeals} />
+      }
+      
     </main>
   )
 }
