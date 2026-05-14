@@ -3,7 +3,8 @@ import { Search, X } from "lucide-react";
 
 export default function SearchBar({value, onChange}) {
     const inputRef = useRef(null);
-    // Clear SearchBar
+
+    // Clear SearchBar and automatically focus the input so the user can type again.
     function handleClear() {
         onChange("");
         inputRef.current?.focus();

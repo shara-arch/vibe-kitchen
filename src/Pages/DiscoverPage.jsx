@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import MoodSelector from '../components/MoodSelector.jsx';
 import SearchBar from '../components/SearchBar.jsx';
@@ -121,6 +121,24 @@ export default function DiscoverPage() {
     })
   : meals
 console.log("Filtered meals: ", filteredMeals)
+
+//search logic, filters meals based on search query matching the meal name or any of the ingredients
+//callback memorizes handleSearch so it doesn't get recreated on every render
+const handleSearch = useCallback(async () => {
+  if (!searchQuery) return
+  const res = await fetch("https://www.themealdb.com/api/json/v1/1/search.php?s=" + searchQuery)
+  const data = await res.json()
+  setMeals(data.meals || []) //if no meals are found, set to empty array to avoid errors
+  .catch(err => console.error("Search error: ", err))
+}, [searchQuery])
+
+//side effect will be debouncing - only applies search filter after user has stopped typing for 500ms to avoid excessive filtering on every keystroke
+useEffect(() => {
+  setTimeout(() => { handleSearch() }, 500)
+
+  return () => clearTimeout()
+},[searchQuery, handleSearch])
+
 
   return(
     <main className='max-w-6xl mx-auto px-4 py-8'>
