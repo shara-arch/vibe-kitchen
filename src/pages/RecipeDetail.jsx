@@ -1,9 +1,10 @@
-import { useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchRecipeById,
   clearSelectedRecipe,
+  addUserRecipe,
 } from "../features/recipes/recipesSlice";
 
 export default function RecipeDetail() {
