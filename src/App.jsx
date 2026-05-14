@@ -1,43 +1,16 @@
-import { useState } from 'react'
-import './App.css'
-import { RecipeProvider } from './context/RecipeContext'
-import { DiscoverRecipes, MyRecipes } from './pages'
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/NavBar.jsx';
+import DiscoverPage from './Pages/DiscoverPage.jsx';
 
-function App() {
-    const [activePage, setActivePage] = useState('discover')
-
+export default function App(){
     return (
-        <RecipeProvider>
-            <div className="app-shell">
-                <header className="app-header">
-                    <div className="app-brand">
-                        <span className="brand-icon">🍽️</span>
-                        <h1 className="brand-name">Vibe Kitchen</h1>
-                    </div>
-                    <nav className="app-nav">
-                        <button
-                            type="button"
-                            className={`nav-tab${activePage === 'discover' ? ' nav-tab--active' : ''}`}
-                            onClick={() => setActivePage('discover')}
-                        >
-                            Discover
-                        </button>
-                        <button
-                            type="button"
-                            className={`nav-tab${activePage === 'my-recipes' ? ' nav-tab--active' : ''}`}
-                            onClick={() => setActivePage('my-recipes')}
-                        >
-                            My Recipes
-                        </button>
-                    </nav>
-                </header>
-
-                <main className="app-main">
-                    {activePage === 'discover' ? <DiscoverRecipes /> : <MyRecipes />}
-                </main>
-            </div>
-        </RecipeProvider>
+        <div>
+        <div className='min-h-screen bg-stone-50'>
+            <Navbar/>
+            <Routes>
+            <Route path ="/" element={<DiscoverPage/>} />
+            </Routes>
+        </div>
+        </div>
     )
 }
-
-export default App
