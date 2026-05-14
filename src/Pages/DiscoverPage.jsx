@@ -58,6 +58,7 @@ export default function DiscoverPage() {
     setLoading(true);
 
     try{
+      //fetch meals by category
       const results = await Promise.all(
           moodCategories.map(cat => 
             fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
@@ -69,7 +70,7 @@ export default function DiscoverPage() {
         .filter(r => r.meals !== null) //filters out any categories that return no meals
         .map(r => r.meals.slice(0, 10)).flat()
 
-        //fetch full details of each meal
+        //fetch full details of each meal by id
         const detailed = await Promise.all(
           mealIds.map(meal => 
             fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
@@ -85,18 +86,41 @@ export default function DiscoverPage() {
       } finally{
         setLoading(false)
       }
-    
-
   }
 
-  const filteredMeals = activeFilters.length
-    ? meals.filter(m =>
-        // Determines whether the specified callback function returns true for any element of an array.
-        activeFilters.some(f => m.MealCategory?.toLowerCase().includes(f.toLowerCase()))
-      )
-    : meals;
-
-
+  //handles filtering of meals based on active filters selected in the filter panel
+    function hasIngredient(meal, ingredient) {
+      for (let i = 1; i <= 20; i++) {
+        const ing = meal[`strIngredient${i}`]
+        if (ing && ing.toLowerCase().includes(ingredient.toLowerCase())) {
+          return true
+        }
+      }
+      return false
+    }
+    
+    const filteredMeals = activeFilters.length
+    ? meals.filter(meal => {
+      //meal is kept only if every filter is passed, if even 1 filter fails the meal is removed from the list
+      return activeFilters.every(filter => {
+        if (filter === 'Vegetarian') return meal.strCategory === 'Vegetarian'
+        if (filter === 'Vegan') return meal.strCategory === 'Vegan'
+        //checking for high protein by looking for common high protein ingredients, this is not a perfect method but the meal db api does not provide nutritional info to be more accurate
+        if (filter === 'High Protein') {
+          const result = hasIngredient(meal, 'chicken') || hasIngredient(meal, 'beef') || hasIngredient(meal, 'egg')
+            console.log("Checking meal: ", meal.strMeal, " for high protein. Result: ", result)
+            return result
+          }
+        if (filter === 'No Nuts') return !hasIngredient(meal, 'nuts') && !hasIngredient(meal, 'almond') && !hasIngredient(meal, 'peanut')
+        if (filter === 'No Dairy') return !hasIngredient(meal, 'cheese') && !hasIngredient(meal, 'milk') && !hasIngredient(meal, 'butter')
+        if (filter === 'No Eggs') return !hasIngredient(meal, 'egg')
+        if (filter === 'No Soy') return !hasIngredient(meal, 'soy')
+        if (filter === 'No Fish') return !hasIngredient(meal, 'fish') && !hasIngredient(meal, 'salmon') && !hasIngredient(meal, 'tuna')
+        return true
+      })
+    })
+  : meals
+console.log("Filtered meals: ", filteredMeals)
 
   return(
     <main className='max-w-6xl mx-auto px-4 py-8'>
