@@ -4,12 +4,20 @@ const FILTER_OPTIONS = {
   'Dietary': ['High Protein', 'Low Carb', 'Vegetarian', 'Vegan'],
   'Allergies': ['No Nuts', 'No Dairy', 'No Eggs', 'No Soy', 'No Fish'],
 }
+
 export default function FilterPanel({activeFilters, onFilterChange}){
+    
     function toggleFilter(filter) {
         onFilterChange(prev =>
+            //if filter is active, remove it, or if it is inactive add it
             prev.includes(filter) ? prev.filter(f => f !== filter) : [...prev,filter]
         );
     }
+
+
+
+
+
     return(
         <div className="bg-white border border-stone-200 rounded-xl p-5 mb-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
