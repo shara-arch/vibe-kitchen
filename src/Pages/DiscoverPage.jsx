@@ -31,7 +31,6 @@ export default function DiscoverPage() {
         //Grab 10 meals per category and flatten(removes 1 level of nesting from an array) to 1 array
         const mealIds = results.map(r => r.meals.slice(0, 10)).flat()
         console.log("Meal Ids: ",mealIds)
-        console.log("Meal categories: ", mealIds.strCategory)
 
         //fetch full details of each meal
         const detailed = await Promise.all(
