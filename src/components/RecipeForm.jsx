@@ -1,128 +1,107 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert", "Drink"];
-
-const initialForm = {
-    title: "",
-    description: "",
-    tags: "",
-    mealType: "",
-    cookTime: "",
-    notes: "",
-    rating: 0,
+const defaultRecipe = {
+  id: null,
+  strMeal: "",
+  strCategory: "",
+  strArea: "",
+  strInstructions: "",
+  strMealThumb: "",
 };
 
-export default function RecipeForm({ onSubmit }) {
-    const [form, setForm] = useState(initialForm);
+export default function RecipeForm({ initialRecipe = {}, onSave, onCancel }) {
+  const [recipe, setRecipe] = useState({ ...defaultRecipe, ...initialRecipe });
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
-        setForm((prev) => ({ ...prev, [name]: value }));
-    };
+  useEffect(() => {
+    setRecipe({ ...defaultRecipe, ...initialRecipe });
+  }, [initialRecipe]);
 
-    const handleRating = (value) => {
-        setForm((prev) => ({ ...prev, rating: value }));
-    };
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setRecipe((current) => ({ ...current, [name]: value }));
+  };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        if (!form.title.trim() || !form.description.trim()) return;
-        onSubmit(form);
-        setForm(initialForm);
-    };
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!recipe.strMeal.trim()) return;
+    onSave(recipe);
+  };
 
-    return (
-        <form className="recipe-form" onSubmit={handleSubmit}>
-            <h2>Add Your Recipe</h2>
+  return (
+    <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-sm font-semibold">Recipe name</span>
+          <input
+            name="strMeal"
+            value={recipe.strMeal}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+            placeholder="e.g. Veggie Curry"
+          />
+        </label>
 
-            <div className="form-row">
-                <label className="form-field">
-                    Recipe Title <span className="required">*</span>
-                    <input
-                        name="title"
-                        value={form.title}
-                        onChange={handleChange}
-                        placeholder="Ex: Roasted Veggie Pasta"
-                        required
-                    />
-                </label>
+        <label className="block">
+          <span className="text-sm font-semibold">Category</span>
+          <input
+            name="strCategory"
+            value={recipe.strCategory}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+            placeholder="e.g. Vegetarian"
+          />
+        </label>
 
-                <label className="form-field">
-                    Meal Type
-                    <select name="mealType" value={form.mealType} onChange={handleChange}>
-                        <option value="">Select…</option>
-                        {MEAL_TYPES.map((type) => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
-                    </select>
-                </label>
-            </div>
+        <label className="block">
+          <span className="text-sm font-semibold">Cuisine</span>
+          <input
+            name="strArea"
+            value={recipe.strArea}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+            placeholder="e.g. Indian"
+          />
+        </label>
 
-            <label className="form-field">
-                Description <span className="required">*</span>
-                <textarea
-                    name="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    placeholder="Short details about ingredients and style"
-                    rows={3}
-                    required
-                />
-            </label>
+        <label className="block">
+          <span className="text-sm font-semibold">Image URL</span>
+          <input
+            name="strMealThumb"
+            value={recipe.strMealThumb}
+            onChange={handleChange}
+            className="mt-1 block w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+            placeholder="https://example.com/image.jpg"
+          />
+        </label>
+      </div>
 
-            <div className="form-row">
-                <label className="form-field">
-                    Tags
-                    <input
-                        name="tags"
-                        value={form.tags}
-                        onChange={handleChange}
-                        placeholder="quick, vegetarian, weeknight"
-                    />
-                </label>
+      <label className="block">
+        <span className="text-sm font-semibold">Instructions</span>
+        <textarea
+          name="strInstructions"
+          value={recipe.strInstructions}
+          onChange={handleChange}
+          rows={6}
+          className="mt-1 block w-full rounded-3xl border border-stone-200 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
+          placeholder="Write the steps for preparing this recipe."
+        />
+      </label>
 
-                <label className="form-field">
-                    Cook Time
-                    <input
-                        name="cookTime"
-                        value={form.cookTime}
-                        onChange={handleChange}
-                        placeholder="Ex: 30 min"
-                    />
-                </label>
-            </div>
-
-            <label className="form-field">
-                Personal Notes
-                <textarea
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleChange}
-                    placeholder="Tips, substitutions, or memories about this recipe…"
-                    rows={2}
-                />
-            </label>
-
-            <div className="form-field">
-                <span className="rating-label">Your Rating</span>
-                <div className="star-picker" role="group" aria-label="Rate this recipe">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                            key={star}
-                            type="button"
-                            className={`star-btn${form.rating >= star ? " star-btn--filled" : ""}`}
-                            onClick={() => handleRating(star)}
-                            aria-label={`${star} star${star > 1 ? "s" : ""}`}
-                        >
-                            ★
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <button type="submit" className="form-submit">
-                Save Recipe
-            </button>
-        </form>
-    );
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          className="secondary w-full rounded-full px-5 py-3 text-sm font-semibold sm:w-auto"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="primary w-full rounded-full px-5 py-3 text-sm font-semibold sm:w-auto"
+        >
+          Save recipe
+        </button>
+      </div>
+    </form>
+  );
 }
