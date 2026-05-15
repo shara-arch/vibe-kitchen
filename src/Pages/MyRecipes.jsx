@@ -1,174 +1,231 @@
-import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { Plus, Pencil, Trash2, BookOpen } from "lucide-react";
-import {
-  fetchUserRecipes,
-  addUserRecipe,
-  updateUserRecipe,
-  deleteUserRecipe,
-} from "../features/recipes/recipesSlice";
-import RecipeForm from "../components/RecipeForm.jsx";
-import RecipeCard from "../components/RecipeCard.jsx";
+import { useMemo, useState } from "react";
+import RecipeForm from "../components/RecipeForm";
+import { useRecipes } from "../hooks/useRecipes";
 
-export default function MyRecipes() {
-  const dispatch = useDispatch();
-  const userRecipes = useSelector((state) => state.recipes.userRecipes);
-  const [editingRecipe, setEditingRecipe] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+const STAR = "★";
+const EMPTY_STAR = "☆";
 
-  useEffect(() => {
-    dispatch(fetchUserRecipes());
-  }, [dispatch]);
+function StarDisplay({ rating }) {
+  return (
+    <span className="star-display" aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <span key={s} className={s <= rating ? "star--filled" : "star--empty"}>
+          {s <= rating ? STAR : EMPTY_STAR}
+        </span>
+      ))}
+    </span>
+  );
+}
 
-  const handleSave = async (recipe) => {
-    if (recipe.id) {
-      await dispatch(updateUserRecipe(recipe));
-    } else {
-      await dispatch(addUserRecipe(recipe));
-    }
-    setShowForm(false);
-    setEditingRecipe(null);
-  };
+function PersonalRecipeCard({ recipe, onRemove, onUpdate }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({
+    notes: recipe.notes || "",
+    rating: recipe.rating || 0,
+  });
 
-  const handleEdit = (recipe) => {
-    setEditingRecipe(recipe);
-    setShowForm(true);
-  };
-
-  const handleDelete = (recipeId) => {
-    dispatch(deleteUserRecipe(recipeId));
+  const handleSave = () => {
+    onUpdate(recipe.id, draft);
+    setEditing(false);
   };
 
   return (
-    <main className="min-h-screen bg-stone-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-amber-50 via-white to-stone-50 border-b border-stone-200">
-        <div className="max-w-6xl mx-auto px-4 py-12">
-          <div className="flex items-start justify-between gap-8">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="bg-amber-100 text-amber-600 p-3 rounded-xl">
-                  <BookOpen size={24} />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-amber-600 uppercase tracking-wide">
-                    Personal recipes
-                  </p>
-                  <h1 className="text-4xl font-bold text-stone-900 mt-1">
-                    Your kitchen collection
-                  </h1>
-                </div>
-              </div>
-              <p className="text-stone-600 max-w-lg">
-                Create, update and remove meals you want to keep handy for
-                everyday cooking. Build your perfect recipe library.
-              </p>
-            </div>
-            <button
-              className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
-              type="button"
-              onClick={() => {
-                setShowForm(true);
-                setEditingRecipe(null);
-              }}
-            >
-              <Plus size={20} />
-              Add recipe
-            </button>
-          </div>
-        </div>
-      </section>
+    <article className="recipe-card personal-card">
+      <div className="card-top">
+        {recipe.mealType && (
+          <span className="meal-badge">{recipe.mealType}</span>
+        )}
+        {recipe.cookTime && (
+          <span className="cook-time">⏱ {recipe.cookTime}</span>
+        )}
+      </div>
 
-      {/* Form Section */}
-      {showForm && (
-        <section className="border-b border-stone-200 bg-white">
-          <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-stone-900">
-                {editingRecipe ? "Edit Recipe" : "Create New Recipe"}
-              </h2>
-              <p className="text-stone-500 mt-1">
-                {editingRecipe
-                  ? "Update your recipe details"
-                  : "Add a new recipe to your collection"}
-              </p>
-            </div>
-            <RecipeForm
-              initialRecipe={editingRecipe || {}}
-              onSave={handleSave}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingRecipe(null);
-              }}
-            />
-          </div>
-        </section>
+      <h3>{recipe.title}</h3>
+      <p>{recipe.description}</p>
+
+      {recipe.tags?.length > 0 && (
+        <div className="tag-row">
+          {recipe.tags.map((tag) => (
+            <span key={`${recipe.id}-${tag}`} className="tag-pill">
+              {tag}
+            </span>
+          ))}
+        </div>
       )}
 
-      {/* Results Section */}
-      <section className="max-w-6xl mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-stone-900 mb-2">
-            {userRecipes.length > 0
-              ? `Your Recipes (${userRecipes.length})`
-              : "No personalized recipes yet"}
-          </h2>
-          <p className="text-stone-600">
-            Recipes you add here are stored locally and will be available as you
-            build your vibe kitchen.
-          </p>
+      {!editing && (
+        <div className="card-meta">
+          <StarDisplay rating={recipe.rating || 0} />
+          {recipe.notes && <p className="personal-notes">📝 {recipe.notes}</p>}
         </div>
+      )}
 
-        {userRecipes.length === 0 ? (
-          <div className="text-center py-20 border-2 border-dashed border-stone-200 rounded-2xl">
-            <BookOpen size={48} className="text-stone-300 mx-auto mb-4" />
-            <p className="text-stone-600 font-medium mb-2">
-              Start building your personal cookbook
-            </p>
-            <p className="text-stone-400 text-sm mb-8">
-              Add your first recipe to get started
-            </p>
+      {editing && (
+        <div className="inline-editor">
+          <div className="form-field">
+            <span className="rating-label">Rating</span>
+            <div className="star-picker" role="group">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`star-btn${draft.rating >= s ? " star-btn--filled" : ""}`}
+                  onClick={() => setDraft((d) => ({ ...d, rating: s }))}
+                  aria-label={`${s} star${s > 1 ? "s" : ""}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="form-field">
+            Notes
+            <textarea
+              value={draft.notes}
+              onChange={(e) =>
+                setDraft((d) => ({ ...d, notes: e.target.value }))
+              }
+              rows={2}
+              placeholder="Add personal notes…"
+            />
+          </label>
+          <div className="inline-editor-actions">
+            <button type="button" className="btn-save" onClick={handleSave}>
+              Save
+            </button>
             <button
-              onClick={() => {
-                setShowForm(true);
-                setEditingRecipe(null);
-              }}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-colors"
+              type="button"
+              className="btn-cancel"
+              onClick={() => setEditing(false)}
             >
-              <Plus size={20} />
-              Add Your First Recipe
+              Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      <div className="card-actions">
+        <button
+          type="button"
+          className="card-action card-action--secondary"
+          onClick={() => {
+            setDraft({ notes: recipe.notes || "", rating: recipe.rating || 0 });
+            setEditing((e) => !e);
+          }}
+        >
+          {editing ? "Close" : "Edit Notes"}
+        </button>
+        <button
+          type="button"
+          className="card-action card-action--danger"
+          onClick={() => onRemove(recipe.id)}
+        >
+          Remove
+        </button>
+      </div>
+    </article>
+  );
+}
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest first" },
+  { value: "rating", label: "Highest rated" },
+  { value: "alpha", label: "A → Z" },
+];
+
+export default function MyRecipes() {
+  const { myRecipes, addRecipe, removeMyRecipe, updateMyRecipe } = useRecipes();
+  const [mealFilter, setMealFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
+
+  const mealTypes = useMemo(() => {
+    const types = myRecipes.map((r) => r.mealType).filter(Boolean);
+    return ["All", ...new Set(types)];
+  }, [myRecipes]);
+
+  const displayedRecipes = useMemo(() => {
+    let list =
+      mealFilter === "All"
+        ? myRecipes
+        : myRecipes.filter((r) => r.mealType === mealFilter);
+
+    if (sortBy === "rating")
+      list = [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    else if (sortBy === "alpha")
+      list = [...list].sort((a, b) => a.title.localeCompare(b.title));
+
+    return list;
+  }, [myRecipes, mealFilter, sortBy]);
+
+  const avgRating = useMemo(() => {
+    const rated = myRecipes.filter((r) => r.rating > 0);
+    if (!rated.length) return null;
+    return (rated.reduce((sum, r) => sum + r.rating, 0) / rated.length).toFixed(
+      1,
+    );
+  }, [myRecipes]);
+
+  return (
+    <section className="page-stack">
+      <RecipeForm onSave={addRecipe} />
+
+      <div className="my-recipes-section">
+        <div className="section-header">
+          <h2 className="section-title">My Recipes</h2>
+          <div className="stats-bar">
+            <span className="stat-chip">{myRecipes.length} saved</span>
+            {avgRating && <span className="stat-chip">⭐ avg {avgRating}</span>}
+          </div>
+        </div>
+
+        {myRecipes.length > 0 && (
+          <div className="filter-bar">
+            <div className="filter-group">
+              {mealTypes.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`filter-chip${mealFilter === type ? " filter-chip--active" : ""}`}
+                  onClick={() => setMealFilter(type)}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+            <select
+              className="sort-select"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort recipes"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {displayedRecipes.length === 0 ? (
+          <p className="empty-text">
+            {myRecipes.length === 0
+              ? "No saved recipes yet. Save one from Discover or add your own above."
+              : "No recipes match this filter."}
+          </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userRecipes.map((recipe) => (
-              <div key={recipe.id} className="group">
-                <div className="bg-white rounded-2xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-md transition-all">
-                  <RecipeCard recipe={recipe} />
-                  <div className="p-4 border-t border-stone-100 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(recipe)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium rounded-lg transition-colors border border-blue-200 hover:border-blue-300"
-                    >
-                      <Pencil size={16} />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(recipe.id)}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors border border-red-200 hover:border-red-300"
-                    >
-                      <Trash2 size={16} />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
+          <div className="recipe-grid">
+            {displayedRecipes.map((recipe) => (
+              <PersonalRecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onRemove={removeMyRecipe}
+                onUpdate={updateMyRecipe}
+              />
             ))}
           </div>
         )}
-      </section>
-    </main>
+      </div>
+    </section>
   );
 }
