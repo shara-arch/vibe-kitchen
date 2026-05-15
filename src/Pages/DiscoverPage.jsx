@@ -29,7 +29,8 @@ export default function DiscoverPage() {
 
         const results = await Promise.all(
           categories.map((cat) =>
-            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`).then((res) => res.json()),
+            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
+              .then((res) => res.json()),
           ),
         );
 
