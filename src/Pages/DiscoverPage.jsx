@@ -1,174 +1,128 @@
-import { useState, useEffect, useCallback } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
-import MoodSelector from '../components/MoodSelector.jsx';
-import SearchBar from '../components/SearchBar.jsx';
-import FilterPanel from '../components/FilterPanel.jsx';
-import RecipeGrid from '../components/RecipeGrid.jsx';
-import About from '../components/About.jsx';
+import { useState, useEffect } from "react";
+import { SlidersHorizontal } from "lucide-react";
+import MoodSelector from "../components/MoodSelector.jsx";
+import SearchBar from "../components/SearchBar.jsx";
+import FilterPanel from "../components/FilterPanel.jsx";
+import RecipeGrid from "../components/RecipeGrid.jsx";
+import About from "../components/About.jsx";
+
+const MOOD_CATEGORIES = {
+  Happy: ["Seafood", "Vegetarian", "Dessert"],
+  Tired: ["Pasta", "Beef", "Comfort"],
+  Energetic: ["Chicken", "Beef", "Vegetarian"],
+  Morning: ["Breakfast", "Seafood"],
+  Evening: ["Beef", "Pasta", "Vegetarian"],
+};
 
 export default function DiscoverPage() {
   const [selectedMood, setSelectedMood] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
   const [meals, setMeals] = useState([]);
-  const [loading, setLoading] = useState (true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchMeals(){
-      try{
-        const categories = ['Chicken', 'Seafood', 'Vegetarian', 'Beef', 'Pasta']
+    async function fetchMeals() {
+      try {
+        const categories = ["Chicken", "Seafood", "Vegetarian", "Beef", "Pasta"];
 
-        //fetch meal list for each category
         const results = await Promise.all(
-          categories.map(cat => 
-            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
-              .then(res => res.json())
-          )
-        )
-        console.log("Results: ", results)
+          categories.map((cat) =>
+            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`).then((res) => res.json()),
+          ),
+        );
 
-        //Grab 10 meals per category and flatten(removes 1 level of nesting from an array) to 1 array
-        const mealIds = results.map(r => r.meals.slice(0, 10)).flat()
-        console.log("Meal Ids: ",mealIds)
+        const mealIds = results.map((r) => r.meals.slice(0, 4)).flat();
 
-        //fetch full details of each meal
         const detailed = await Promise.all(
-          mealIds.map(meal => 
+          mealIds.map((meal) =>
             fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
-              .then(res => res.json()) //the response for each meal comes in array format
-              .then(d => d.meals?.[0] ?? null) //makes sure to display the first and only index in each response meal array
-          )
-        )
-        console.log("Detailed result: ", detailed)
+              .then((res) => res.json())
+              .then((d) => d.meals?.[0] ?? null),
+          ),
+        );
 
-        setMeals(detailed)
-      }catch(err){
-        console.error("Error message: ",err)
-      } finally{
-        setLoading(false)
+        setMeals(detailed.filter((meal) => meal !== null));
+      } catch (err) {
+        console.error("Error message: ", err);
+      } finally {
+        setLoading(false);
       }
     }
-    fetchMeals()
+
+    fetchMeals();
   }, []);
 
-  //mood selection filter
-  async function handleMoodSelected(moodName, moodCategories ){
-    setSelectedMood(moodName);
-    setLoading(true);
-
-    try{
-      //fetch meals by category
-      const results = await Promise.all(
-          moodCategories.map(cat => 
-            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
-              .then(res => res.json())
-          )
-        )
-
-        const mealIds = results
-        .filter(r => r.meals !== null) //filters out any categories that return no meals
-        .map(r => r.meals.slice(0, 10)).flat()
-
-        //fetch full details of each meal by id
-        const detailed = await Promise.all(
-          mealIds.map(meal => 
-            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
-              .then(res => res.json()) //the response for each meal comes in array format
-              .then(d => d.meals?.[0] ?? null) //makes sure to display the first and only index in each response meal array
-          )
-        )
-
-        setMeals(detailed.filter(meal => meal !== null)) //only set meals that have details, filters out any null values that may occur if a meal lookup fails
-      
-      }catch(err){
-        console.error("Error message: ",err)
-      } finally{
-        setLoading(false)
-      }
-  }
-
-  //handles filtering of meals based on active filters selected in the filter panel
-    function hasIngredient(meal, ingredient) {
-      for (let i = 1; i <= 20; i++) {
-        const ing = meal[`strIngredient${i}`]
-        if (ing && ing.toLowerCase().includes(ingredient.toLowerCase())) {
-          return true
-        }
-      }
-      return false
+  const filteredMeals = meals.filter((meal) => {
+    if (selectedMood) {
+      const moodCategories = MOOD_CATEGORIES[selectedMood] || [];
+      const matchesMood = moodCategories.some((category) =>
+        meal.strCategory?.toLowerCase().includes(category.toLowerCase()),
+      );
+      if (!matchesMood) return false;
     }
-    
-    const filteredMeals = activeFilters.length
-    ? meals.filter(meal => {
-      //meal is kept only if every filter is passed, if even 1 filter fails the meal is removed from the list
-      return activeFilters.every(filter => {
-        if (filter === 'Vegetarian') return meal.strCategory === 'Vegetarian'
-        if (filter === 'Vegan') return meal.strCategory === 'Vegan'
-        //checking for high protein by looking for common high protein ingredients, this is not a perfect method but the meal db api does not provide nutritional info to be more accurate
-        if (filter === 'High Protein') {
-          const result = hasIngredient(meal, 'chicken') || hasIngredient(meal, 'beef') || hasIngredient(meal, 'egg')
-            console.log("Checking meal: ", meal.strMeal, " for high protein. Result: ", result)
-            return result
-          }
-        if (filter === 'No Nuts') return !hasIngredient(meal, 'nuts') && !hasIngredient(meal, 'almond') && !hasIngredient(meal, 'peanut')
-        if (filter === 'No Dairy') return !hasIngredient(meal, 'cheese') && !hasIngredient(meal, 'milk') && !hasIngredient(meal, 'butter')
-        if (filter === 'No Eggs') return !hasIngredient(meal, 'egg')
-        if (filter === 'No Soy') return !hasIngredient(meal, 'soy')
-        if (filter === 'No Fish') return !hasIngredient(meal, 'fish') && !hasIngredient(meal, 'salmon') && !hasIngredient(meal, 'tuna')
-        return true
-      })
-    })
-  : meals
-console.log("Filtered meals: ", filteredMeals)
 
-//search logic, filters meals based on search query matching the meal name or any of the ingredients
-//callback memorizes handleSearch so it doesn't get recreated on every render
-const handleSearch = useCallback(async () => {
-  if (!searchQuery) return
-  const res = await fetch("https://www.themealdb.com/api/json/v1/1/search.php?s=" + searchQuery)
-  const data = await res.json()
-  setMeals(data.meals || []) //if no meals are found, set to empty array to avoid errors
-  .catch(err => console.error("Search error: ", err))
-}, [searchQuery])
+    if (activeFilters.length > 0) {
+      const matchesFilter = activeFilters.some((filter) =>
+        meal.strCategory?.toLowerCase().includes(filter.toLowerCase()),
+      );
+      if (!matchesFilter) return false;
+    }
 
-//side effect will be debouncing - only applies search filter after user has stopped typing for 500ms to avoid excessive filtering on every keystroke
-useEffect(() => {
-  setTimeout(() => { handleSearch() }, 500)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      return (
+        meal.strMeal?.toLowerCase().includes(query) ||
+        meal.strCategory?.toLowerCase().includes(query) ||
+        meal.strArea?.toLowerCase().includes(query)
+      );
+    }
 
-  return () => clearTimeout()
-},[searchQuery, handleSearch])
+    return true;
+  });
 
+  return (
+    <main className="max-w-6xl mx-auto px-4 py-8">
+      <About />
 
-  return(
-    <main className='max-w-6xl mx-auto px-4 py-8'>
-        <About />
-        <MoodSelector selectedMood={selectedMood} onMoodSelect={handleMoodSelected} />
-        <SearchBar value={searchQuery} onChange={setSearchQuery}/>
-        <div className='flex items-center justify-between mb-4'>
-            {filteredMeals.length > 0 && (
-                <p className="text-sm text-stone-500">
-                    Showing <span className="font-semibold text-stone-700">{filteredMeals.length}</span> recipes
-                    {selectedMood && <span> for <span className="font-semibold text-amber-600">{selectedMood}</span></span>}
-                </p>
+      <MoodSelector selectedMood={selectedMood} onMoodSelect={setSelectedMood} />
+
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
+      <div className="flex items-center justify-between mb-4">
+        {filteredMeals.length > 0 && (
+          <p className="text-sm text-stone-500">
+            Showing <span className="font-semibold text-stone-700">{filteredMeals.length}</span> recipes
+            {selectedMood && (
+              <span>
+                {' '}for{' '}
+                <span className="font-semibold text-amber-600">{selectedMood}</span>
+              </span>
             )}
-            <button onClick={() => setShowFilters(!showFilters)} className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
-                 showFilters || activeFilters.length > 0
-                ? 'bg-amber-500 border-amber-500 text-white'
-                : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600'
-                }`}> <SlidersHorizontal size={15}/> Filters
-            {activeFilters.length > 0 && (
-            <span className="bg-white/30 text-white text-xs rounded-full px-1.5">{activeFilters.length}</span>
+          </p>
+        )}
+
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+            showFilters || activeFilters.length > 0
+              ? 'bg-amber-500 border-amber-500 text-white'
+              : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600'
+          }`}
+        >
+          <SlidersHorizontal size={15} /> Filters
+          {activeFilters.length > 0 && (
+            <span className="bg-white/30 text-white text-xs rounded-full px-1.5">
+              {activeFilters.length}
+            </span>
           )}
-          </button>
-        </div>
-        {showFilters && (
-        <FilterPanel activeFilters={activeFilters} onFilterChange={setActiveFilters} />
-      )}
-      { loading ? <p>Loading meals...</p> 
-      : <RecipeGrid meals={filteredMeals} />
-      }
-      
+        </button>
+      </div>
+
+      {showFilters && <FilterPanel activeFilters={activeFilters} onFilterChange={setActiveFilters} />}
+
+      {loading ? <p>Loading meals...</p> : <RecipeGrid meals={filteredMeals} />}
     </main>
-  )
+  );
 }
