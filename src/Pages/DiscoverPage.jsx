@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { SlidersHorizontal } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchRecipes } from "../features/recipes/recipesSlice.js";
 import MoodSelector from "../components/MoodSelector.jsx";
 import SearchBar from "../components/SearchBar.jsx";
 import FilterPanel from "../components/FilterPanel.jsx";
@@ -7,51 +9,29 @@ import RecipeGrid from "../components/RecipeGrid.jsx";
 import About from "../components/About.jsx";
 
 export default function DiscoverPage() {
+  const dispatch = useDispatch();
+  const { meals, mealsStatus } = useSelector((state) => state.recipes);
+
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodCategories, setMoodCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
-  const [meals, setMeals] = useState([]);
-  const [loading, setLoading] = useState(true);
 
+  // Fetch meals only if not already loaded in the store
   useEffect(() => {
-    async function fetchMeals() {
-      try {
-        const categories = ["Breakfast", "Chicken", "Seafood", "Vegetarian", "Beef", "Pasta", "Dessert", "Pork", "Side", "Starter", "Vegan", "Miscellaneous", "Goat", "Lamb"];
-
-        const results = await Promise.all(
-          categories.map((cat) =>
-            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
-              .then((res) => res.json()),
-          ),
-        );
-
-        const mealIds = results.map((r) => r.meals.slice(0, 8)).flat();
-
-        const detailed = await Promise.all(
-          mealIds.map((meal) =>
-            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
-              .then((res) => res.json())
-              .then((d) => d.meals?.[0] ?? null),
-          ),
-        );
-
-        setMeals(detailed.filter((meal) => meal !== null));
-      } catch (err) {
-        console.error("Error message: ", err);
-      } finally {
-        setLoading(false);
-      }
+    if (meals.length === 0 && mealsStatus === "idle") {
+      dispatch(fetchRecipes());
     }
+  }, [dispatch, meals.length, mealsStatus]);
 
-    fetchMeals();
-  }, []);
+  const loading = mealsStatus === "loading";
 
   const filteredMeals = meals.filter((meal) => {
     if (selectedMood && moodCategories.length > 0) {
-      const matchesMood = moodCategories.some((category) =>
-        meal.strCategory?.toLowerCase() === category.toLowerCase(),
+      const matchesMood = moodCategories.some(
+        (category) =>
+          meal.strCategory?.toLowerCase() === category.toLowerCase(),
       );
       if (!matchesMood) return false;
     }
@@ -97,11 +77,18 @@ export default function DiscoverPage() {
       <div className="flex items-center justify-between mb-4">
         {filteredMeals.length > 0 && (
           <p className="text-sm text-stone-500">
-            Showing <span className="font-semibold text-stone-700">{filteredMeals.length}</span> recipes
+            Showing{" "}
+            <span className="font-semibold text-stone-700">
+              {filteredMeals.length}
+            </span>{" "}
+            recipes
             {selectedMood && (
               <span>
-                {' '}for{' '}
-                <span className="font-semibold text-amber-600">{selectedMood}</span>
+                {" "}
+                for{" "}
+                <span className="font-semibold text-amber-600">
+                  {selectedMood}
+                </span>
               </span>
             )}
           </p>
@@ -111,8 +98,8 @@ export default function DiscoverPage() {
           onClick={() => setShowFilters(!showFilters)}
           className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
             showFilters || activeFilters.length > 0
-              ? 'bg-amber-500 border-amber-500 text-white'
-              : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600'
+              ? "bg-amber-500 border-amber-500 text-white"
+              : "bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600"
           }`}
         >
           <SlidersHorizontal size={15} /> Filters
@@ -124,9 +111,21 @@ export default function DiscoverPage() {
         </button>
       </div>
 
-      {showFilters && <FilterPanel activeFilters={activeFilters} onFilterChange={setActiveFilters} />}
+      {showFilters && (
+        <FilterPanel
+          activeFilters={activeFilters}
+          onFilterChange={setActiveFilters}
+        />
+      )}
 
-      {loading ? <p>Loading meals...</p> : <RecipeGrid meals={filteredMeals} />}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-8 h-8 border-[3px] border-amber-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-stone-400 text-sm">Loading recipes…</p>
+        </div>
+      ) : (
+        <RecipeGrid meals={filteredMeals} />
+      )}
     </main>
   );
 }
