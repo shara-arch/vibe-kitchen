@@ -1,54 +1,95 @@
-import { useState, useEffect } from "react";
-import { SlidersHorizontal } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchRecipes } from "../features/recipes/recipesSlice.js";
-import MoodSelector from "../components/MoodSelector.jsx";
-import SearchBar from "../components/SearchBar.jsx";
-import FilterPanel from "../components/FilterPanel.jsx";
-import RecipeGrid from "../components/RecipeGrid.jsx";
-import About from "../components/About.jsx";
+import { useState, useEffect } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
+import MoodSelector from '../components/MoodSelector.jsx';
+import SearchBar from '../components/SearchBar.jsx';
+import FilterPanel from '../components/FilterPanel.jsx';
+import RecipeGrid from '../components/RecipeGrid.jsx';
+import About from '../components/About.jsx';
 
 export default function DiscoverPage() {
-  const dispatch = useDispatch();
-  const { meals, mealsStatus } = useSelector((state) => state.recipes);
-
   const [selectedMood, setSelectedMood] = useState(null);
   const [moodCategories, setMoodCategories] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
+  const [meals, setMeals] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch meals only if not already loaded in the store
   useEffect(() => {
-    if (meals.length === 0 && mealsStatus === "idle") {
-      dispatch(fetchRecipes());
-    }
-  }, [dispatch, meals.length, mealsStatus]);
+    async function fetchMeals() {
+      try {
+        const categories = ["Breakfast","Chicken","Seafood",
+          "Vegetarian","Beef","Pasta","Dessert","Pork","Side",
+          "Starter","Vegan","Miscellaneous","Goat","Lamb",];
 
-  const loading = mealsStatus === "loading";
+        const results = await Promise.all(
+          categories.map((cat) =>
+            fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
+              .then((res) => res.json())
+              .catch(() => ({ meals: [] }))  // don't let one bad category crash all
+          )
+        );
+
+        const mealIds = results
+          .filter((r) => r.meals !== null)   // same null-guard you used in handleMoodSelected
+          .map((r) => r.meals.slice(0, 10))
+          .flat();
+
+        const detailed = await Promise.all(
+          mealIds.map((meal) =>
+            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
+              .then((res) => res.json())
+              .then((d) => d.meals?.[0] ?? null)
+              .catch(() => null)
+          )
+        );
+
+        setMeals(detailed.filter(Boolean));
+      } catch (err) {
+        console.error('Error fetching meals:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMeals();
+  }, []);
+
+  // Mood filtering is client-side — no need to re-fetch from the API
+  function handleMoodSelected(moodName, categories) {
+    if (selectedMood === moodName) {
+      setSelectedMood(null);
+      setMoodCategories([]);
+    } else {
+      setSelectedMood(moodName);
+      setMoodCategories(categories || []);
+    }
+  }
 
   const filteredMeals = meals.filter((meal) => {
+    // 1. Mood filter
     if (selectedMood && moodCategories.length > 0) {
       const matchesMood = moodCategories.some(
-        (category) =>
-          meal.strCategory?.toLowerCase() === category.toLowerCase(),
+        (cat) => meal.strCategory?.toLowerCase() === cat.toLowerCase()
       );
       if (!matchesMood) return false;
     }
 
+    // 2. Active filters (panel)
     if (activeFilters.length > 0) {
-      const matchesFilter = activeFilters.some((filter) =>
-        meal.strCategory?.toLowerCase().includes(filter.toLowerCase()),
+      const matchesFilter = activeFilters.some((f) =>
+        meal.strCategory?.toLowerCase().includes(f.toLowerCase())
       );
       if (!matchesFilter) return false;
     }
 
+    // 3. Search query
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const q = searchQuery.toLowerCase();
       return (
-        meal.strMeal?.toLowerCase().includes(query) ||
-        meal.strCategory?.toLowerCase().includes(query) ||
-        meal.strArea?.toLowerCase().includes(query)
+        meal.strMeal?.toLowerCase().includes(q) ||
+        meal.strCategory?.toLowerCase().includes(q) ||
+        meal.strArea?.toLowerCase().includes(q)
       );
     }
 
@@ -61,15 +102,7 @@ export default function DiscoverPage() {
 
       <MoodSelector
         selectedMood={selectedMood}
-        onMoodSelect={(name, categories) => {
-          if (selectedMood === name) {
-            setSelectedMood(null);
-            setMoodCategories([]);
-          } else {
-            setSelectedMood(name);
-            setMoodCategories(categories || []);
-          }
-        }}
+        onMoodSelect={handleMoodSelected}
       />
 
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
@@ -77,18 +110,13 @@ export default function DiscoverPage() {
       <div className="flex items-center justify-between mb-4">
         {filteredMeals.length > 0 && (
           <p className="text-sm text-stone-500">
-            Showing{" "}
-            <span className="font-semibold text-stone-700">
-              {filteredMeals.length}
-            </span>{" "}
-            recipes
+            Showing{' '}
+            <span className="font-semibold text-stone-700">{filteredMeals.length}</span>
+            {' '}recipes
             {selectedMood && (
               <span>
-                {" "}
-                for{" "}
-                <span className="font-semibold text-amber-600">
-                  {selectedMood}
-                </span>
+                {' '}for{' '}
+                <span className="font-semibold text-amber-600">{selectedMood}</span>
               </span>
             )}
           </p>
@@ -98,8 +126,8 @@ export default function DiscoverPage() {
           onClick={() => setShowFilters(!showFilters)}
           className={`ml-auto flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
             showFilters || activeFilters.length > 0
-              ? "bg-amber-500 border-amber-500 text-white"
-              : "bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600"
+              ? 'bg-amber-500 border-amber-500 text-white'
+              : 'bg-white border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-600'
           }`}
         >
           <SlidersHorizontal size={15} /> Filters
@@ -112,10 +140,7 @@ export default function DiscoverPage() {
       </div>
 
       {showFilters && (
-        <FilterPanel
-          activeFilters={activeFilters}
-          onFilterChange={setActiveFilters}
-        />
+        <FilterPanel activeFilters={activeFilters} onFilterChange={setActiveFilters} />
       )}
 
       {loading ? (
