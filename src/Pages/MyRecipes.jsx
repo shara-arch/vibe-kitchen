@@ -137,6 +137,7 @@ export default function MyRecipes() {
   const { myRecipes, addRecipe, removeMyRecipe, updateMyRecipe } = useRecipes();
   const [mealFilter, setMealFilter] = useState("All");
   const [sortBy, setSortBy] = useState("newest");
+  const [showForm, setShowForm] = useState(false);
 
   const mealTypes = useMemo(() => {
     const types = myRecipes.map((r) => r.mealType).filter(Boolean);
@@ -167,7 +168,26 @@ export default function MyRecipes() {
 
   return (
     <section className="page-stack">
-      <RecipeForm onSave={addRecipe} />
+      <div className="flex items-center justify-between px-1">
+        <h1 className="text-2xl font-bold text-stone-800">My Recipes</h1>
+        <button
+          type="button"
+          onClick={() => setShowForm((v) => !v)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors"
+        >
+          {showForm ? "✕ Cancel" : "+ Create Recipe"}
+        </button>
+      </div>
+
+      {showForm && (
+        <RecipeForm
+          onSave={(recipe) => {
+            addRecipe(recipe);
+            setShowForm(false);
+          }}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
 
       <div className="my-recipes-section">
         <div className="section-header">

@@ -6,16 +6,9 @@ import FilterPanel from "../components/FilterPanel.jsx";
 import RecipeGrid from "../components/RecipeGrid.jsx";
 import About from "../components/About.jsx";
 
-const MOOD_CATEGORIES = {
-  Happy: ["Seafood", "Vegetarian", "Dessert"],
-  Tired: ["Pasta", "Beef", "Comfort"],
-  Energetic: ["Chicken", "Beef", "Vegetarian"],
-  Morning: ["Breakfast", "Seafood"],
-  Evening: ["Beef", "Pasta", "Vegetarian"],
-};
-
 export default function DiscoverPage() {
   const [selectedMood, setSelectedMood] = useState(null);
+  const [moodCategories, setMoodCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilters, setActiveFilters] = useState([]);
@@ -25,7 +18,7 @@ export default function DiscoverPage() {
   useEffect(() => {
     async function fetchMeals() {
       try {
-        const categories = ["Chicken", "Seafood", "Vegetarian", "Beef", "Pasta"];
+        const categories = ["Breakfast", "Chicken", "Seafood", "Vegetarian", "Beef", "Pasta", "Dessert", "Pork", "Side", "Starter", "Vegan", "Miscellaneous", "Goat", "Lamb"];
 
         const results = await Promise.all(
           categories.map((cat) =>
@@ -34,7 +27,7 @@ export default function DiscoverPage() {
           ),
         );
 
-        const mealIds = results.map((r) => r.meals.slice(0, 4)).flat();
+        const mealIds = results.map((r) => r.meals.slice(0, 8)).flat();
 
         const detailed = await Promise.all(
           mealIds.map((meal) =>
@@ -56,10 +49,9 @@ export default function DiscoverPage() {
   }, []);
 
   const filteredMeals = meals.filter((meal) => {
-    if (selectedMood) {
-      const moodCategories = MOOD_CATEGORIES[selectedMood] || [];
+    if (selectedMood && moodCategories.length > 0) {
       const matchesMood = moodCategories.some((category) =>
-        meal.strCategory?.toLowerCase().includes(category.toLowerCase()),
+        meal.strCategory?.toLowerCase() === category.toLowerCase(),
       );
       if (!matchesMood) return false;
     }
@@ -87,7 +79,18 @@ export default function DiscoverPage() {
     <main className="max-w-6xl mx-auto px-4 py-8">
       <About />
 
-      <MoodSelector selectedMood={selectedMood} onMoodSelect={setSelectedMood} />
+      <MoodSelector
+        selectedMood={selectedMood}
+        onMoodSelect={(name, categories) => {
+          if (selectedMood === name) {
+            setSelectedMood(null);
+            setMoodCategories([]);
+          } else {
+            setSelectedMood(name);
+            setMoodCategories(categories || []);
+          }
+        }}
+      />
 
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
