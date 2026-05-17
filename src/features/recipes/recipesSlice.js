@@ -1,27 +1,95 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// Async thunk for fetching recipes from mealDB
+// ── localStorage helpers ──────────────────────────────────
+const LS_MEALS_KEY = "vk_meals_cache";
+const LS_MEALS_TS_KEY = "vk_meals_ts";
+const LS_USER_KEY = "vk_user_recipes";
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+function loadMealsCache() {
+  try {
+    const ts = Number(localStorage.getItem(LS_MEALS_TS_KEY) || 0);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    const raw = localStorage.getItem(LS_MEALS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveMealsCache(meals) {
+  try {
+    localStorage.setItem(LS_MEALS_KEY, JSON.stringify(meals));
+    localStorage.setItem(LS_MEALS_TS_KEY, String(Date.now()));
+  } catch {}
+}
+
+function loadUserRecipes() {
+  try {
+    const raw = localStorage.getItem(LS_USER_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveUserRecipes(recipes) {
+  try { localStorage.setItem(LS_USER_KEY, JSON.stringify(recipes)); } catch {}
+}
+
+// ── Async thunks ──────────────────────────────────────────
+
 export const fetchRecipes = createAsyncThunk(
   "recipes/fetchRecipes",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        "https://www.themealdb.com/api/json/v1/1/random.php",
+      const cached = loadMealsCache();
+      if (cached && cached.length > 0) return cached;
+
+      const categories = [
+        "Breakfast","Chicken","Seafood","Vegetarian","Beef",
+        "Pasta","Dessert","Pork","Side","Starter","Vegan",
+        "Miscellaneous","Goat","Lamb",
+      ];
+
+      const results = await Promise.all(
+        categories.map((cat) =>
+          fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
+            .then((r) => r.json())
+            .catch(() => ({ meals: [] })),
+        ),
       );
-      if (!response.ok) throw new Error("Failed to fetch");
-      const data = await response.json();
-      return data.meals || [];
+
+      const mealIds = results.flatMap((r) => (r.meals || []).slice(0, 6));
+
+      const batchSize = 10;
+      const detailed = [];
+      for (let i = 0; i < mealIds.length; i += batchSize) {
+        const batch = mealIds.slice(i, i + batchSize);
+        const batchResults = await Promise.all(
+          batch.map((meal) =>
+            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
+              .then((r) => r.json())
+              .then((d) => d.meals?.[0] ?? null)
+              .catch(() => null),
+          ),
+        );
+        detailed.push(...batchResults);
+      }
+
+      const meals = detailed.filter(Boolean);
+      saveMealsCache(meals);
+      return meals;
     } catch (error) {
       return rejectWithValue(error.message);
     }
   },
 );
 
-// Async thunk for fetching a specific recipe by ID
 export const fetchRecipeById = createAsyncThunk(
   "recipes/fetchRecipeById",
   async (id, { rejectWithValue }) => {
     try {
+      const userRecipes = loadUserRecipes();
+      const userMatch = userRecipes.find((r) => String(r.id) === String(id));
+      if (userMatch) return { ...userMatch, _isUserRecipe: true };
+
       const response = await fetch(
         `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`,
       );
@@ -34,167 +102,90 @@ export const fetchRecipeById = createAsyncThunk(
   },
 );
 
-// Async thunk for fetching user recipes from local db
 export const fetchUserRecipes = createAsyncThunk(
   "recipes/fetchUserRecipes",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await fetch("http://localhost:3000/userRecipes");
-      if (!response.ok) throw new Error("Failed to fetch user recipes");
-      return await response.json();
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  },
+  async () => loadUserRecipes(),
 );
 
-// Async thunk for adding a user recipe
 export const addUserRecipe = createAsyncThunk(
   "recipes/addUserRecipe",
-  async (recipe, { rejectWithValue }) => {
-    try {
-      const response = await fetch("http://localhost:3000/userRecipes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(recipe),
-      });
-      if (!response.ok) throw new Error("Failed to add recipe");
-      return await response.json();
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  async (recipe) => {
+    const newRecipe = { ...recipe, id: `user-${Date.now()}`, addedAt: new Date().toISOString() };
+    const existing = loadUserRecipes();
+    saveUserRecipes([newRecipe, ...existing]);
+    return newRecipe;
   },
 );
 
-// Async thunk for updating a user recipe
 export const updateUserRecipe = createAsyncThunk(
   "recipes/updateUserRecipe",
-  async (recipe, { rejectWithValue }) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/userRecipes/${recipe.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(recipe),
-        },
-      );
-      if (!response.ok) throw new Error("Failed to update recipe");
-      return await response.json();
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  async (recipe) => {
+    const existing = loadUserRecipes();
+    const updated = existing.map((r) =>
+      String(r.id) === String(recipe.id) ? { ...r, ...recipe } : r,
+    );
+    saveUserRecipes(updated);
+    return recipe;
   },
 );
 
-// Async thunk for deleting a user recipe
 export const deleteUserRecipe = createAsyncThunk(
   "recipes/deleteUserRecipe",
-  async (recipeId, { rejectWithValue }) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/userRecipes/${recipeId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      if (!response.ok) throw new Error("Failed to delete recipe");
-      return recipeId;
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
+  async (recipeId) => {
+    const existing = loadUserRecipes();
+    saveUserRecipes(existing.filter((r) => String(r.id) !== String(recipeId)));
+    return recipeId;
   },
 );
 
+// ── Slice ─────────────────────────────────────────────────
 const recipesSlice = createSlice({
   name: "recipes",
   initialState: {
     meals: [],
     userRecipes: [],
     selectedRecipe: null,
-    status: "idle",
+    mealsStatus: "idle",
+    detailStatus: "idle",
+    userStatus: "idle",
     error: null,
   },
   reducers: {
     clearSelectedRecipe: (state) => {
       state.selectedRecipe = null;
+      state.detailStatus = "idle";
     },
   },
   extraReducers: (builder) => {
-    // Fetch recipes
     builder
-      .addCase(fetchRecipes.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(fetchRecipes.fulfilled, (state, action) => {
-        state.status = "idle";
-        state.meals = action.payload;
-      })
-      .addCase(fetchRecipes.rejected, (state, action) => {
-        state.status = "error";
-        state.error = action.payload;
-      });
+      .addCase(fetchRecipes.pending, (state) => { state.mealsStatus = "loading"; })
+      .addCase(fetchRecipes.fulfilled, (state, action) => { state.mealsStatus = "idle"; state.meals = action.payload; })
+      .addCase(fetchRecipes.rejected, (state, action) => { state.mealsStatus = "error"; state.error = action.payload; });
 
-    // Fetch recipe by ID
     builder
-      .addCase(fetchRecipeById.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(fetchRecipeById.fulfilled, (state, action) => {
-        state.status = "idle";
-        state.selectedRecipe = action.payload;
-      })
-      .addCase(fetchRecipeById.rejected, (state, action) => {
-        state.status = "error";
-        state.error = action.payload;
-      });
+      .addCase(fetchRecipeById.pending, (state) => { state.detailStatus = "loading"; })
+      .addCase(fetchRecipeById.fulfilled, (state, action) => { state.detailStatus = "idle"; state.selectedRecipe = action.payload; })
+      .addCase(fetchRecipeById.rejected, (state, action) => { state.detailStatus = "error"; state.error = action.payload; });
 
-    // Fetch user recipes
     builder
-      .addCase(fetchUserRecipes.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(fetchUserRecipes.fulfilled, (state, action) => {
-        state.status = "idle";
-        state.userRecipes = action.payload;
-      })
-      .addCase(fetchUserRecipes.rejected, (state, action) => {
-        state.status = "error";
-        state.error = action.payload;
-      });
+      .addCase(fetchUserRecipes.pending, (state) => { state.userStatus = "loading"; })
+      .addCase(fetchUserRecipes.fulfilled, (state, action) => { state.userStatus = "idle"; state.userRecipes = action.payload; })
+      .addCase(fetchUserRecipes.rejected, (state, action) => { state.userStatus = "error"; state.error = action.payload; });
 
-    // Add user recipe
     builder
       .addCase(addUserRecipe.fulfilled, (state, action) => {
-        state.userRecipes.push(action.payload);
-      })
-      .addCase(addUserRecipe.rejected, (state, action) => {
-        state.error = action.payload;
+        state.userRecipes = [action.payload, ...state.userRecipes];
       });
 
-    // Update user recipe
     builder
       .addCase(updateUserRecipe.fulfilled, (state, action) => {
-        const index = state.userRecipes.findIndex(
-          (r) => r.id === action.payload.id,
-        );
-        if (index !== -1) {
-          state.userRecipes[index] = action.payload;
-        }
-      })
-      .addCase(updateUserRecipe.rejected, (state, action) => {
-        state.error = action.payload;
+        const idx = state.userRecipes.findIndex((r) => String(r.id) === String(action.payload.id));
+        if (idx !== -1) state.userRecipes[idx] = { ...state.userRecipes[idx], ...action.payload };
       });
 
-    // Delete user recipe
     builder
       .addCase(deleteUserRecipe.fulfilled, (state, action) => {
-        state.userRecipes = state.userRecipes.filter(
-          (r) => r.id !== action.payload,
-        );
-      })
-      .addCase(deleteUserRecipe.rejected, (state, action) => {
-        state.error = action.payload;
+        state.userRecipes = state.userRecipes.filter((r) => String(r.id) !== String(action.payload));
       });
   },
 });
