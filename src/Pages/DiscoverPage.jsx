@@ -65,7 +65,17 @@ export default function DiscoverPage() {
       setMoodCategories(categories || []);
     }
   }
-
+  
+  function hasIngredient(meal, ingredient) {
+    for (let i = 1; i <= 20; i++) {
+      const ing = meal[`strIngredient${i}`]
+      if (ing && ing.toLowerCase().includes(ingredient.toLowerCase())) {
+        return true
+      }
+    }
+    return false
+  }
+  
 const filteredMeals = meals.filter(meal => {
   // 1. Mood filter — check if meal category matches mood categories
   if (selectedMood && moodCategories.length > 0) {
