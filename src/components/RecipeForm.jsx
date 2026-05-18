@@ -16,11 +16,12 @@ const normalizeRecipe = (recipe) => ({
   tags: Array.isArray(recipe.tags) ? recipe.tags.join(", ") : recipe.tags || "",
 });
 
-export default function RecipeForm({ initialRecipe = {}, onSave, onCancel }) {
-  const [recipe, setRecipe] = useState(normalizeRecipe(initialRecipe));
+export default function RecipeForm({ initialRecipe, onSave, onCancel }) {
+  const recipeInput = initialRecipe || {};
+  const [recipe, setRecipe] = useState(normalizeRecipe(recipeInput));
 
   useEffect(() => {
-    setRecipe(normalizeRecipe(initialRecipe));
+    setRecipe(normalizeRecipe(initialRecipe || {}));
   }, [initialRecipe]);
 
   const handleChange = (event) => {
