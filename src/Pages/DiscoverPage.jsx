@@ -66,35 +66,43 @@ export default function DiscoverPage() {
     }
   }
 
-  const filteredMeals = meals.filter((meal) => {
-    // 1. Mood filter
-    if (selectedMood && moodCategories.length > 0) {
-      const matchesMood = moodCategories.some(
-        (cat) => meal.strCategory?.toLowerCase() === cat.toLowerCase()
-      );
-      if (!matchesMood) return false;
-    }
+const filteredMeals = meals.filter(meal => {
+  // 1. Mood filter — check if meal category matches mood categories
+  if (selectedMood && moodCategories.length > 0) {
+    const matchesMood = moodCategories.some(
+      cat => meal.strCategory?.toLowerCase() === cat.toLowerCase()
+    )
+    if (!matchesMood) return false
+  }
 
-    // 2. Active filters (panel)
-    if (activeFilters.length > 0) {
-      const matchesFilter = activeFilters.some((f) =>
-        meal.strCategory?.toLowerCase().includes(f.toLowerCase())
-      );
-      if (!matchesFilter) return false;
-    }
-
+  // 2. Active filters — check ingredients
+  if (activeFilters.length > 0) {
+    const passesFilters = activeFilters.every(filter => {
+      if (filter === 'Vegetarian') return meal.strCategory === 'Vegetarian'
+      if (filter === 'Vegan') return meal.strCategory === 'Vegan'
+      if (filter === 'High Protein') return hasIngredient(meal, 'chicken') || hasIngredient(meal, 'beef') || hasIngredient(meal, 'egg')
+      if (filter === 'Low Carb') return !hasIngredient(meal, 'pasta') && !hasIngredient(meal, 'rice') && !hasIngredient(meal, 'bread')
+      if (filter === 'No Nuts') return !hasIngredient(meal, 'nuts') && !hasIngredient(meal, 'almond') && !hasIngredient(meal, 'peanut')
+      if (filter === 'No Dairy') return !hasIngredient(meal, 'cheese') && !hasIngredient(meal, 'milk') && !hasIngredient(meal, 'butter')
+      if (filter === 'No Eggs') return !hasIngredient(meal, 'egg')
+      if (filter === 'No Soy') return !hasIngredient(meal, 'soy')
+      if (filter === 'No Fish') return !hasIngredient(meal, 'fish') && !hasIngredient(meal, 'salmon') && !hasIngredient(meal, 'tuna')
+      return true
+    })
+    if (!passesFilters) return false
+  }
     // 3. Search query
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        meal.strMeal?.toLowerCase().includes(q) ||
-        meal.strCategory?.toLowerCase().includes(q) ||
-        meal.strArea?.toLowerCase().includes(q)
-      );
-    }
+    const q = searchQuery.toLowerCase()
+    return (
+      meal.strMeal?.toLowerCase().includes(q) ||
+      meal.strCategory?.toLowerCase().includes(q) ||
+      meal.strArea?.toLowerCase().includes(q)
+    )
+  }
 
-    return true;
-  });
+  return true
+})
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
