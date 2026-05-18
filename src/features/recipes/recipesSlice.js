@@ -1,7 +1,26 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 // ── localStorage helpers ──────────────────────────────────
+const LS_MEALS_KEY = "vk_meals_cache";
+const LS_MEALS_TS_KEY = "vk_meals_ts";
 const LS_USER_KEY = "vk_user_recipes";
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+function loadMealsCache() {
+  try {
+    const ts = Number(localStorage.getItem(LS_MEALS_TS_KEY) || 0);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    const raw = localStorage.getItem(LS_MEALS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveMealsCache(meals) {
+  try {
+    localStorage.setItem(LS_MEALS_KEY, JSON.stringify(meals));
+    localStorage.setItem(LS_MEALS_TS_KEY, String(Date.now()));
+  } catch {}
+}
 
 function loadUserRecipes() {
   try {
@@ -15,6 +34,73 @@ function saveUserRecipes(recipes) {
 }
 
 // ── Async thunks ──────────────────────────────────────────
+
+export const fetchRecipes = createAsyncThunk(
+  "recipes/fetchRecipes",
+  async (_, { rejectWithValue }) => {
+    try {
+      const cached = loadMealsCache();
+      if (cached && cached.length > 0) return cached;
+
+      const categories = [
+        "Breakfast","Chicken","Seafood","Vegetarian","Beef",
+        "Pasta","Dessert","Pork","Side","Starter","Vegan",
+        "Miscellaneous","Goat","Lamb",
+      ];
+
+      const results = await Promise.all(
+        categories.map((cat) =>
+          fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${cat}`)
+            .then((r) => r.json())
+            .catch(() => ({ meals: [] })),
+        ),
+      );
+
+      const mealIds = results.flatMap((r) => (r.meals || []).slice(0, 6));
+
+      const batchSize = 10;
+      const detailed = [];
+      for (let i = 0; i < mealIds.length; i += batchSize) {
+        const batch = mealIds.slice(i, i + batchSize);
+        const batchResults = await Promise.all(
+          batch.map((meal) =>
+            fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${meal.idMeal}`)
+              .then((r) => r.json())
+              .then((d) => d.meals?.[0] ?? null)
+              .catch(() => null),
+          ),
+        );
+        detailed.push(...batchResults);
+      }
+
+      const meals = detailed.filter(Boolean);
+      saveMealsCache(meals);
+      return meals;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const fetchRecipeById = createAsyncThunk(
+  "recipes/fetchRecipeById",
+  async (id, { rejectWithValue }) => {
+    try {
+      const userRecipes = loadUserRecipes();
+      const userMatch = userRecipes.find((r) => String(r.id) === String(id));
+      if (userMatch) return { ...userMatch, _isUserRecipe: true };
+
+      const response = await fetch(
+        `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch");
+      const data = await response.json();
+      return data.meals?.[0] || null;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
 
 export const fetchUserRecipes = createAsyncThunk(
   "recipes/fetchUserRecipes",
@@ -56,12 +142,31 @@ export const deleteUserRecipe = createAsyncThunk(
 const recipesSlice = createSlice({
   name: "recipes",
   initialState: {
+    meals: [],
     userRecipes: [],
+    selectedRecipe: null,
+    mealsStatus: "idle",
+    detailStatus: "idle",
     userStatus: "idle",
     error: null,
   },
-  reducers: {},
+  reducers: {
+    clearSelectedRecipe: (state) => {
+      state.selectedRecipe = null;
+      state.detailStatus = "idle";
+    },
+  },
   extraReducers: (builder) => {
+    builder
+      .addCase(fetchRecipes.pending, (state) => { state.mealsStatus = "loading"; })
+      .addCase(fetchRecipes.fulfilled, (state, action) => { state.mealsStatus = "idle"; state.meals = action.payload; })
+      .addCase(fetchRecipes.rejected, (state, action) => { state.mealsStatus = "error"; state.error = action.payload; });
+
+    builder
+      .addCase(fetchRecipeById.pending, (state) => { state.detailStatus = "loading"; })
+      .addCase(fetchRecipeById.fulfilled, (state, action) => { state.detailStatus = "idle"; state.selectedRecipe = action.payload; })
+      .addCase(fetchRecipeById.rejected, (state, action) => { state.detailStatus = "error"; state.error = action.payload; });
+
     builder
       .addCase(fetchUserRecipes.pending, (state) => { state.userStatus = "loading"; })
       .addCase(fetchUserRecipes.fulfilled, (state, action) => { state.userStatus = "idle"; state.userRecipes = action.payload; })
@@ -85,4 +190,5 @@ const recipesSlice = createSlice({
   },
 });
 
+export const { clearSelectedRecipe } = recipesSlice.actions;
 export default recipesSlice.reducer;
